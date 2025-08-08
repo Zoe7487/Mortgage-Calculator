@@ -1,184 +1,61 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-
 <head>
-    <meta charset="UTF-8">
-    <title>2025房貸試算</title>
-    <style>
-        body {
-            font-family: "Microsoft JhengHei", sans-serif;
-            margin: 40px;
-        }
-
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 20px;
-        }
-
-        select,
-        input[type="number"],
-        input[type="text"] {
-            font-size: 1.2em;
-            height: 3em;
-            color: red;
-        }
-
-        button {
-            margin-top: 20px;
-            font-size: 1.2em;
-            background-color: blue;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        .result {
-            margin-top: 30px;
-        }
-
-        .highlight {
-            color: red;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>房貸試算工具</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; }
+    label, select, input, button { display: block; margin: 10px 0; width: 100%; }
+    #result { margin-top: 20px; font-weight: bold; }
+  </style>
 </head>
-
 <body>
-    <h1>2025房貸試算</h1>
+  <h2>房貸試算工具</h2>
 
-    <label for="amount">貸款金額（<span class="highlight">萬元</span>）：</label> 
-    <input type="number" id="amount" placeholder="請輸入金額">
+  <label>貸款金額（萬元）</label> <!-- 🔴 調整：顯示單位為萬元 -->
+  <input type="number" id="loanAmount" placeholder="請輸入貸款金額">
 
-    <label for="years">年限：</label>
-    <select id="years">
-        <option value="20">20年</option>
-        <option value="30">30年</option>
-        <option value="40">40年</option>
-    </select>
+  <label>貸款年限</label>
+  <input type="number" id="loanYears" placeholder="請輸入年數（例如 20）">
 
-    <label for="bank">選擇銀行：</label>
-    <select id="bank"></select>
+  <label>選擇銀行（自動帶入利率）</label>
+  <select id="bankSelect" onchange="setRate()">
+    <option value="">-- 請選擇 --</option>
+    <option value="1.68">台灣銀行（1.68%）</option>
+    <option value="1.75">土地銀行（1.75%）</option>
+    <option value="1.82">合作金庫（1.82%）</option>
+    <option value="1.90">第一銀行（1.90%）</option>
+    <option value="1.95">華南銀行（1.95%）</option>
+    <option value="2.05">台新銀行（2.05%）</option>
+    <option value="2.10">中國信託（2.10%）</option>
+    <option value="2.15">玉山銀行（2.15%）</option>
+    <option value="2.20">國泰世華（2.20%）</option>
+    <option value="2.25">永豐銀行（2.25%）</option>
+    <option value="1.85">農會（1.85%）</option>
+  </select>
 
-    <label for="rate">輸入利率（%）：</label>
-    <input type="number" step="0.01" id="rate" placeholder="可自訂或選銀行">
+  <label>或自行輸入利率（%）</label>
+  <input type="number" step="0.01" id="customRate" placeholder="例如：1.88">
 
-    <label for="repayType">還款方式：</label>
-    <select id="repayType">
-        <option value="annuity">本息平均</option>
-        <option value="equalPrincipal">本金平均</option>
-    </select>
+  <label>還款方式</label>
+  <select id="repaymentType">
+    <option value="equal">本息平均（等額本息）</option>
+    <option value="principal">本金平均（等額本金）</option>
+  </select>
 
-    <button onclick="calculatePayment()">試算</button>
+  <button onclick="calculate()">試算</button>
 
-    <div class="result">
-        <p>每月還款金額：<span id="monthlyPayment"></span></p>
-        <p>總還款金額：<span id="totalPayment"></span></p>
-        <p>總利息金額：<span id="totalInterest"></span></p>
-    </div>
+  <div id="result"></div>
 
-    <script>
-        const bankRates = {
-            "20": {
-                "臺灣銀行": 2.1,
-                "土地銀行": 2.06,
-                "合作金庫": 2.06,
-                "第一銀行": 2.09,
-                "華南銀行": 2.06,
-                "彰化銀行": 2.09,
-                "上海商銀": 2.1,
-                "台北富邦": 2.06,
-                "國泰世華": 2.06,
-                "兆豐銀行": 2.06,
-                "農會": 2.04
-            },
-            "30": {
-                "臺灣銀行": 2.13,
-                "土地銀行": 2.13,
-                "合作金庫": 2.09,
-                "第一銀行": 2.13,
-                "華南銀行": 2.13,
-                "彰化銀行": 2.09,
-                "上海商銀": 2.1,
-                "台北富邦": 2.09,
-                "國泰世華": 2.09,
-                "兆豐銀行": 2.09,
-                "農會": 2.07
-            },
-            "40": {
-                "土地銀行": 2.18,
-                "合作金庫": 2.14,
-                "第一銀行": 2.18,
-                "華南銀行": 2.18,
-                "彰化銀行": 2.14,
-                "台北富邦": 2.14,
-                "國泰世華": 2.14,
-                "兆豐銀行": 2.14,
-                "農會": 2.12
-            }
-        };
+  <script>
+    function setRate() {
+      const rate = document.getElementById('bankSelect').value;
+      document.getElementById('customRate').value = rate;
+    }
 
-        const yearsEl = document.getElementById("years");
-        const bankEl = document.getElementById("bank");
-
-        yearsEl.addEventListener("change", updateBanks);
-
-        function updateBanks() {
-            const selectedYears = yearsEl.value;
-            bankEl.innerHTML = "<option value=''>-- 不選擇 --</option>";
-            const banks = bankRates[selectedYears];
-            for (let bank in banks) {
-                const opt = document.createElement("option");
-                opt.value = banks[bank];
-                opt.text = bank;
-                bankEl.appendChild(opt);
-            }
-        }
-
-        bankEl.addEventListener("change", function () {
-            const selectedRate = bankEl.value;
-            if (selectedRate) {
-                document.getElementById("rate").value = selectedRate;
-            }
-        });
-
-        updateBanks();
-
-        function calculatePayment() {
-            const amount = parseFloat(document.getElementById("amount").value) * 10000; // 
-            const years = parseInt(document.getElementById("years").value);
-            const rate = parseFloat(document.getElementById("rate").value) / 100 / 12;
-            const repayType = document.getElementById("repayType").value;
-            const months = years * 12;
-
-            let monthlyPayment = 0;
-            let totalPayment = 0;
-            let totalInterest = 0;
-
-            if (repayType === "annuity") {
-                monthlyPayment = amount * rate * Math.pow(1 + rate, months) / (Math.pow(1 + rate, months) - 1);
-                totalPayment = monthlyPayment * months;
-                totalInterest = totalPayment - amount;
-            } else {
-                const principalPerMonth = amount / months;
-                let interestSum = 0;
-                for (let i = 0; i < months; i++) {
-                    interestSum += (amount - principalPerMonth * i) * rate;
-                }
-                totalPayment = amount + interestSum;
-                monthlyPayment = amount / months + (amount * rate);
-                totalInterest = interestSum;
-            }
-
-            document.getElementById("monthlyPayment").innerText = monthlyPayment.toFixed(0) + " 元";
-            document.getElementById("totalPayment").innerText = totalPayment.toFixed(0) + " 元";
-            document.getElementById("totalInterest").innerText = totalInterest.toFixed(0) + " 元";
-        }
-    </script>
-</body>
-
-</html>
+    function calculate() {
+      // 🔴 調整：把萬元轉成元
+      const loanAmount = parseFloat(document.getElementById('loanAmount').value) * 10000;
+      const loanYears = parseInt(document.getElementById('loanYears').value);
+      const interestRate = parseFloat(document.getElementById('customRate').value);
+      const rep
