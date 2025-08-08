@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>2025房貸試算</title>
+  <style>
+    body {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      margin: 40px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .form-section {
+      margin-bottom: 20px;
+    }
+    .form-section label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .form-section select,
+    .form-section input[type="number"],
+    .form-section input[type="text"] {
+      color: red;
+      font-size: 18px;
+      padding: 10px;
+      height: 48px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: blue;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .result {
+      margin-top: 30px;
+      font-size: 18px;
+      line-height: 2;
+    }
+  </style>
+</head>
+<body>
+  <h1>2025房貸試算</h1>
+
+  <div class="form-section">
+    <label for="amount">貸款金額（百萬）</label>
+    <input type="number" id="amount" placeholder="例如：8 代表800萬">
+  </div>
+
+  <div class="form-section">
+    <label for="years">貸款年限</label>
+    <select id="years" onchange="filterBanks()">
+      <option value="20">20年</option>
+      <option value="30">30年</option>
+      <option value="40">40年</option>
+    </select>
+  </div>
+
+  <div class="form-section">
+    <label for="bank">選擇銀行</label>
+    <select id="bank">
+      <option value="custom">-- 自訂利率 --</option>
+    </select>
+  </div>
+
+  <div class="form-section">
+    <label for="rate">輸入利率（年利率 %）</label>
+    <input type="number" id="rate" step="0.01" placeholder="例如：2.08">
+  </div>
+
+  <div class="form-section">
+    <label for="method">還款方式</label>
+    <select id="method">
+      <option value="equal">本息均攤</option>
+      <option value="principal">本金攤還</option>
+    </select>
+  </div>
+
+  <button onclick="calculate()">試算</button>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    const ratesByBank = {
+      '20': {
+        '台灣銀行': 2.04,
+        '土地銀行': 2.04,
+        '合庫銀行': 2.08,
+        '第一銀行': 2.06,
+        '華南銀行': 2.08,
+        '彰化銀行': 2.10,
+        '台北富邦銀行': 2.10,
+        '中國信託': 2.12,
+        '永豐銀行': 2.10,
+        '台新銀行': 2.15,
+        '農會': 2.00
+      },
+      '30': {
+        '台灣銀行': 2.06,
+        '土地銀行': 2.06,
+        '合庫銀行': 2.10,
+        '第一銀行': 2.08,
+        '華南銀行': 2.10,
+        '彰化銀行': 2.12,
+        '台北富邦銀行': 2.12,
+        '中國信託': 2.14,
+        '永豐銀行': 2.12,
+        '台新銀行': 2.17,
+        '農會': 2.05
+      },
+      '40': {
+        '土地銀行': 2.20,
+        '合庫銀行': 2.22,
+        '第一銀行': 2.25,
+        '農會': 2.15
+      }
+    };
+
+    function filterBanks() {
+      const year = document.getElementById("years").value;
+      const bankSelect = document.getElementById("bank");
+      bankSelect.innerHTML = '<option value="custom">-- 自訂利率 --</option>';
+      const banks = ratesByBank[year];
+      for (let bank in banks) {
+        let option = document.createElement("option");
+        option.value = bank;
+        option.textContent = bank;
+        bankSelect.appendChild(option);
+      }
+    }
+
+    document.getElementById("bank").addEventListener("change", function() {
+      const year = document.getElementById("years").value;
+      const selectedBank = this.value;
+      if (selectedBank !== "custom") {
+        document.getElementById("rate").value = ratesByBank[year][selectedBank];
+      }
+    });
+
+    function calculate() {
+      const amount = parseFloat(document.getElementById("amount").value) * 1000000;
+      const years = parseInt(document.getElementById("years").value);
+      const rate = parseFloat(document.getElementById("rate").value) / 100 / 12;
+      const months = years * 12;
+      const method = document.getElementById("method").value;
+
+      let resultText = "";
+
+      if (method === "equal") {
+        const monthly = (amount * rate) / (1 - Math.pow(1 + rate, -months));
+        const total = monthly * months;
+        const interest = total - amount;
+        resultText += `每月還款：${monthly.toFixed(0)} 元<br>`;
+        resultText += `總還款金額：${total.toFixed(0)} 元<br>`;
+        resultText += `總利息：${interest.toFixed(0)} 元`;
+      } else {
+        const monthlyPrincipal = amount / months;
+        let total = 0;
+        for (let i = 0; i < months; i++) {
+          const interest = (amount - monthlyPrincipal * i) * rate;
+          total += monthlyPrincipal + interest;
+        }
+        const interest = total - amount;
+        resultText += `第1期月付款：${(monthlyPrincipal + amount * rate).toFixed(0)} 元<br>`;
+        resultText += `第${months}期月付款：約 ${(monthlyPrincipal + monthlyPrincipal * rate).toFixed(0)} 元<br>`;
+        resultText += `總還款金額：${total.toFixed(0)} 元<br>`;
+        resultText += `總利息：${interest.toFixed(0)} 元`;
+      }
+
+      document.getElementById("result").innerHTML = resultText;
+    }
+
+    filterBanks();
+  </script>
+</body>
+</html>
