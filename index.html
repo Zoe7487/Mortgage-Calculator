@@ -1,107 +1,241 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <title>房貸試算工具</title>
+  <meta charset="UTF-8" />
+  <title>2025房貸試算</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; }
-    label, select, input, button { display: block; margin: 10px 0; width: 100%; }
-    #result { margin-top: 20px; font-weight: bold; }
+    body {
+      font-family: "Microsoft JhengHei", sans-serif;
+      text-align: center;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+    .container {
+      display: inline-block;
+      text-align: left;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+  input[type="number"],
+input[type="text"],
+select {
+  width: 400px;
+  height: 50px;
+  font-size: 18px;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  padding-left: 10px;
+  color: red;
+  -moz-appearance: textfield;
+}
+
+    /* 移除Chrome上下箭頭 */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none;
+      margin: 0; 
+    }
+    #calculate {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      width: 400px;
+      height: 50px;
+      font-size: 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .result {
+      font-weight: bold;
+      font-size: 18px; /* 縮小約2倍 */
+      margin-top: 30px;
+      background-color: #fff9db; /* 淡黃色背景 */
+      border-radius: 12px;
+      padding: 20px;
+      color: black;
+    }
+    .result span {
+      color: red;
+      font-weight: bold;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
-  <h2>房貸試算工具</h2>
-
-  <label>貸款金額（萬元）</label> <!-- 🔴 調整：顯示單位為萬元 -->
-  <input type="number" id="loanAmount" placeholder="請輸入貸款金額">
-
-  <label>貸款年限</label>
-  <input type="number" id="loanYears" placeholder="請輸入年數（例如 20）">
-
-  <label>選擇銀行（自動帶入利率）</label>
-  <select id="bankSelect" onchange="setRate()">
-    <option value="">-- 請選擇 --</option>
-    <option value="1.68">台灣銀行（1.68%）</option>
-    <option value="1.75">土地銀行（1.75%）</option>
-    <option value="1.82">合作金庫（1.82%）</option>
-    <option value="1.90">第一銀行（1.90%）</option>
-    <option value="1.95">華南銀行（1.95%）</option>
-    <option value="2.05">台新銀行（2.05%）</option>
-    <option value="2.10">中國信託（2.10%）</option>
-    <option value="2.15">玉山銀行（2.15%）</option>
-    <option value="2.20">國泰世華（2.20%）</option>
-    <option value="2.25">永豐銀行（2.25%）</option>
-    <option value="1.85">農會（1.85%）</option>
-  </select>
-
-  <label>或自行輸入利率（%）</label>
-  <input type="number" step="0.01" id="customRate" placeholder="例如：1.88">
-
-  <label>還款方式</label>
-  <select id="repaymentType">
-    <option value="equal">本息平均（等額本息）</option>
-    <option value="principal">本金平均（等額本金）</option>
-  </select>
-
-  <button onclick="calculate()">試算</button>
-
-  <div id="result"></div>
+  <h1>2025房貸試算</h1>
+  <div class="container">
+    <div class="form-group">
+      <label for="amount">貸款金額（萬元）</label>
+      <input type="text" id="amount" required placeholder="請輸入金額" />
+    </div>
+    <div class="form-group">
+      <label for="years">貸款年限</label>
+      <select id="years" onchange="updateBankOptions()">
+        <option value="20">20年</option>
+        <option value="30">30年</option>
+        <option value="40">40年</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="bank">選擇銀行</label>
+      <select id="bank" onchange="setInterestRate()"></select>
+    </div>
+    <div class="form-group">
+      <label for="rate">自訂利率（%）</label>
+      <input type="text" id="rate" step="0.01" placeholder="可自訂或選銀行" />
+    </div>
+    <div class="form-group">
+      <label for="repaymentType">還款方式</label>
+      <select id="repaymentType">
+        <option value="equal">本利攤還</option>
+        <option value="principal">本金攤還</option>
+      </select>
+    </div>
+    <button id="calculate" onclick="calculateLoan()">試算</button>
+    <div class="result" id="monthlyResult"></div>
+    <div class="result" id="totalResult"></div>
+    <div class="result" id="interestResult"></div>
+  </div>
 
   <script>
-    function setRate() {
-      const rate = document.getElementById('bankSelect').value;
-      document.getElementById('customRate').value = rate;
+    const bankRates = {
+      "20": {
+        "台灣銀行": 2.09,
+        "土地銀行": 2.06,
+        "合庫銀行": 2.06,
+        "第一銀行": 2.09,
+        "華南銀行": 2.1,
+        "彰化銀行": 2.05,
+        "上海商銀": 2.05,
+        "台北富邦": 2.06,
+        "兆豐銀行": 2.1,
+        "農會": 2.08
+      },
+      "30": {
+        "台灣銀行": 2.12,
+        "土地銀行": 2.1,
+        "合庫銀行": 2.1,
+        "第一銀行": 2.12,
+        "華南銀行": 2.13,
+        "彰化銀行": 2.08,
+        "上海商銀": 2.08,
+        "台北富邦": 2.1,
+        "兆豐銀行": 2.13,
+        "農會": 2.11
+      },
+      "40": {
+        "土地銀行": 2.2,
+        "合庫銀行": 2.2,
+        "華南銀行": 2.25,
+        "兆豐銀行": 2.28,
+        "農會": 2.22
+      }
+    };
+
+    function updateBankOptions() {
+      const year = document.getElementById("years").value;
+      const bankSelect = document.getElementById("bank");
+      bankSelect.innerHTML = "";
+      for (const bank in bankRates[year]) {
+        const option = document.createElement("option");
+        option.value = bank;
+        option.text = bank;
+        bankSelect.appendChild(option);
+      }
+      setInterestRate();
     }
 
-    function calculate() {
-      // 🔴 調整：把萬元轉成元
-      const loanAmount = parseFloat(document.getElementById('loanAmount').value) * 10000;
-      const loanYears = parseInt(document.getElementById('loanYears').value);
-      const interestRate = parseFloat(document.getElementById('customRate').value);
-      const repaymentType = document.getElementById('repaymentType').value;
+    function setInterestRate() {
+      const year = document.getElementById("years").value;
+      const bank = document.getElementById("bank").value;
+      const rate = bankRates[year][bank] || 2.1;
+      document.getElementById("rate").value = rate;
+    }
 
-      if (!loanAmount || !loanYears || !interestRate) {
-        alert("請輸入完整資訊！");
+    // 將字串數字加千分位，保持只允許數字輸入和格式化
+    const amountInput = document.getElementById("amount");
+    amountInput.addEventListener("input", function(e){
+      let value = e.target.value;
+      // 移除非數字
+      value = value.replace(/[^\d]/g, "");
+      // 加千分位
+      const formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      e.target.value = formatted;
+    });
+
+    const rateInput = document.getElementById("rate");
+    rateInput.addEventListener("input", function(e){
+      let value = e.target.value;
+      // 允許輸入數字及一個小數點
+      value = value.replace(/[^\d.]/g, "");
+      const parts = value.split(".");
+      if(parts.length > 2){
+        value = parts[0] + "." + parts[1];
+      }
+      e.target.value = value;
+    });
+
+    function parseFormattedNumber(str) {
+      return parseFloat(str.replace(/,/g, ""));
+    }
+
+    function calculateLoan() {
+      const amountStr = document.getElementById("amount").value;
+      const amount = parseFormattedNumber(amountStr) * 10000;
+      const years = parseInt(document.getElementById("years").value);
+      const annualRate = parseFloat(document.getElementById("rate").value) / 100;
+      if(isNaN(amount) || amount <= 0){
+        alert("請輸入有效貸款金額");
         return;
       }
+      if(isNaN(annualRate) || annualRate <= 0){
+        alert("請輸入有效利率");
+        return;
+      }
+      const months = years * 12;
+      const monthlyRate = annualRate / 12;
+      const repaymentType = document.getElementById("repaymentType").value;
 
-      const monthlyRate = interestRate / 100 / 12;
-      const totalMonths = loanYears * 12;
-      let resultHTML = "";
+      let monthlyPayment, totalPayment, totalInterest;
 
       if (repaymentType === "equal") {
-        const monthlyPayment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
-                               (Math.pow(1 + monthlyRate, totalMonths) - 1);
-        const totalPayment = monthlyPayment * totalMonths;
-        const totalInterest = totalPayment - loanAmount;
-
-        resultHTML += `<p>【等額本息】</p>`;
-        resultHTML += `每月應繳金額：<span style="color:green;">${monthlyPayment.toFixed(0)} 元</span><br>`;
-        resultHTML += `總還款金額：${totalPayment.toFixed(0)} 元<br>`;
-        resultHTML += `總利息金額：${totalInterest.toFixed(0)} 元<br>`;
-
+        monthlyPayment = amount * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months));
+        totalPayment = monthlyPayment * months;
+        totalInterest = totalPayment - amount;
       } else {
-        const monthlyPrincipal = loanAmount / totalMonths;
-        let totalPayment = 0;
-        let firstMonth = 0;
-
-        for (let i = 0; i < totalMonths; i++) {
-          const interest = (loanAmount - monthlyPrincipal * i) * monthlyRate;
-          const monthly = monthlyPrincipal + interest;
-          if (i === 0) firstMonth = monthly;
-          totalPayment += monthly;
+        const principalMonthly = amount / months;
+        totalInterest = 0;
+        for (let i = 0; i < months; i++) {
+          totalInterest += (amount - principalMonthly * i) * monthlyRate;
         }
-
-        const totalInterest = totalPayment - loanAmount;
-
-        resultHTML += `<p>【等額本金】</p>`;
-        resultHTML += `首月應繳金額：<span style="color:green;">${firstMonth.toFixed(0)} 元</span><br>`;
-        resultHTML += `總還款金額：${totalPayment.toFixed(0)} 元<br>`;
-        resultHTML += `總利息金額：${totalInterest.toFixed(0)} 元<br>`;
+        totalPayment = amount + totalInterest;
+        monthlyPayment = principalMonthly + (amount * monthlyRate);
       }
 
-      document.getElementById('result').innerHTML = resultHTML;
+      // 格式化結果加千分位
+      function formatCurrency(num) {
+        return num.toLocaleString("zh-TW", { minimumFractionDigits: 0 });
+      }
+
+      document.getElementById("monthlyResult").innerHTML =
+        `每月還款金額：<span>${formatCurrency(Math.round(monthlyPayment))}元</span>`;
+      document.getElementById("totalResult").innerHTML =
+        `總還款金額：<span>${formatCurrency(Math.round(totalPayment))}元</span>`;
+      document.getElementById("interestResult").innerHTML =
+        `總利息金額：<span>${formatCurrency(Math.round(totalInterest))}元</span>`;
     }
+
+    // 初始設定
+    updateBankOptions();
   </script>
 </body>
 </html>
