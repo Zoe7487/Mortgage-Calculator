@@ -58,4 +58,50 @@
       const loanAmount = parseFloat(document.getElementById('loanAmount').value) * 10000;
       const loanYears = parseInt(document.getElementById('loanYears').value);
       const interestRate = parseFloat(document.getElementById('customRate').value);
-      const rep
+      const repaymentType = document.getElementById('repaymentType').value;
+
+      if (!loanAmount || !loanYears || !interestRate) {
+        alert("請輸入完整資訊！");
+        return;
+      }
+
+      const monthlyRate = interestRate / 100 / 12;
+      const totalMonths = loanYears * 12;
+      let resultHTML = "";
+
+      if (repaymentType === "equal") {
+        const monthlyPayment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
+                               (Math.pow(1 + monthlyRate, totalMonths) - 1);
+        const totalPayment = monthlyPayment * totalMonths;
+        const totalInterest = totalPayment - loanAmount;
+
+        resultHTML += `<p>【等額本息】</p>`;
+        resultHTML += `每月應繳金額：<span style="color:green;">${monthlyPayment.toFixed(0)} 元</span><br>`;
+        resultHTML += `總還款金額：${totalPayment.toFixed(0)} 元<br>`;
+        resultHTML += `總利息金額：${totalInterest.toFixed(0)} 元<br>`;
+
+      } else {
+        const monthlyPrincipal = loanAmount / totalMonths;
+        let totalPayment = 0;
+        let firstMonth = 0;
+
+        for (let i = 0; i < totalMonths; i++) {
+          const interest = (loanAmount - monthlyPrincipal * i) * monthlyRate;
+          const monthly = monthlyPrincipal + interest;
+          if (i === 0) firstMonth = monthly;
+          totalPayment += monthly;
+        }
+
+        const totalInterest = totalPayment - loanAmount;
+
+        resultHTML += `<p>【等額本金】</p>`;
+        resultHTML += `首月應繳金額：<span style="color:green;">${firstMonth.toFixed(0)} 元</span><br>`;
+        resultHTML += `總還款金額：${totalPayment.toFixed(0)} 元<br>`;
+        resultHTML += `總利息金額：${totalInterest.toFixed(0)} 元<br>`;
+      }
+
+      document.getElementById('result').innerHTML = resultHTML;
+    }
+  </script>
+</body>
+</html>
